@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import chardet
 from chardet.enums import EncodingEra
-from chardet.equivalences import is_correct, is_equivalent_detection
+from chardet.evaluation import is_correct, is_equivalent_detection
 
 
 def _assert_detection(

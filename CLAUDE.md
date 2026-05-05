@@ -79,7 +79,7 @@ Docs use Sphinx with Furo theme. API reference is auto-generated from source doc
 HATCH_BUILD_HOOK_ENABLE_MYPYC=true uv build  # compile hot-path modules
 ```
 
-Compiled modules: `models/__init__.py`, `pipeline/structural.py`, `pipeline/validity.py`, `pipeline/statistical.py`, `pipeline/utf1632.py`, `pipeline/utf8.py`, `pipeline/escape.py`, `pipeline/orchestrator.py`, `pipeline/confusion.py`, `pipeline/magic.py`, `pipeline/ascii.py`. These modules cannot use `from __future__ import annotations` (FA100 is ignored for them in ruff config).
+Compiled modules: `models/__init__.py`, `pipeline/structural.py`, `pipeline/validity.py`, `pipeline/statistical.py`, `pipeline/utf1632.py`, `pipeline/utf8.py`, `pipeline/escape.py`, `pipeline/orchestrator.py`, `pipeline/confusion.py`, `pipeline/magic.py`, `pipeline/ascii.py`, `pipeline/language.py`, `pipeline/postprocess.py`. These modules cannot use `from __future__ import annotations` (FA100 is ignored for them in ruff config).
 
 ## Architecture
 
@@ -92,14 +92,15 @@ All detection flows through `run_pipeline()`, which runs stages in order — eac
 3. **Escape sequences** (`escape.py`) — ISO-2022-JP/KR, HZ-GB-2312
 4. **Magic numbers** (`magic.py`) — file signature detection (e.g., PDF, images)
 5. **Binary detection** (`binary.py`) — null bytes / control chars → encoding=None
-6. **Markup charset** (`markup.py`) — `<meta charset>` / `<?xml encoding>` extraction
+6. **Markup charset** (`markup.py`) — `<meta charset>` / `<?xml encoding>` extraction, plus `promote_markup_superset()` which swaps the declared encoding to its Windows superset (Shift_JIS→CP932, EUC-KR→CP949) when structural evidence supports it
 7. **ASCII** (`ascii.py`) — pure 7-bit check
 8. **UTF-8** (`utf8.py`) — structural multi-byte validation
 9. **Byte validity** (`validity.py`) — eliminate encodings that can't decode the data
 10. **CJK gating** (in orchestrator) — eliminate CJK candidates lacking multi-byte structure
 11. **Structural probing** (`structural.py`) — score multi-byte encoding fit
 12. **Statistical scoring** (`statistical.py`) — bigram frequency models for final ranking
-13. **Post-processing** (`_postprocess_results()` in orchestrator) — confusion group resolution (`confusion.py`), niche Latin demotion, KOI8-T promotion
+13. **Post-processing** (`postprocess.py:postprocess_results()`) — chained rank corrections: confusion-group resolution (delegated to `confusion.py`), niche Latin demotion, KOI8-T promotion
+14. **Language detection** (`language.py`) — three-tier fill of the `language` field on every result (single-language map → multi-language bigram → UTF-8 fallback). Runs in `run_pipeline` after the core pipeline.
 
 ### Key Types
 
@@ -118,9 +119,15 @@ Binary file `src/chardet/models/models.bin` — v2 dense zlib-compressed format 
 - `detect_all(byte_str, ignore_threshold, ...)` → list of result dicts
 - `UniversalDetector` (`detector.py`) — streaming interface with `feed()`/`close()`/`reset()`
 
-### Encoding Equivalences (`equivalences.py`)
+### Accuracy Evaluation (`evaluation.py`)
 
-Defines acceptable detection mismatches for accuracy testing: directional supersets (e.g., utf-8 is acceptable when ascii is expected) and bidirectional equivalents (UTF-16/32 endian variants). Used by `tests/test_accuracy.py` and diagnostic scripts.
+Tables and predicates for asking "is this detection acceptable, given what was expected?" Defines directional supersets (e.g., utf-8 is acceptable when ascii is expected), bidirectional encoding groups (e.g., ISO-2022-JP variants), and bidirectional language groups (e.g., Slovak/Czech). Used by `tests/test_accuracy.py`, `tests/test_github_issues.py`, and the diagnostic/benchmarking scripts in `scripts/`.
+
+### Public-API Encoding Names (`output_names.py`)
+
+Two output transforms applied to detection results before they cross the public API: `apply_preferred_superset` (for the `prefer_superset=True` option, remaps ISO subsets to Windows supersets) and `apply_compat_names` (for the default `compat_names=True` mode, maps internal codec names to chardet 5.x/6.x display names). Used by `__init__.py` and `detector.py`.
+
+`equivalences.py` is a deprecation shim that re-exports both modules' contents until 8.0.
 
 ### Scripts
 

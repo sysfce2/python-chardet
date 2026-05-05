@@ -4,7 +4,15 @@ from __future__ import annotations
 import re
 from unittest.mock import patch
 
-from chardet.pipeline.markup import detect_markup_charset
+from chardet.pipeline import DetectionResult
+from chardet.pipeline.markup import detect_markup_charset, promote_markup_superset
+
+
+def test_promote_markup_superset_passthrough_none_encoding():
+    """promote_markup_superset passes through results with encoding=None."""
+    result = DetectionResult(None, 0.95, None, None)
+    allowed = frozenset({"cp932", "shift_jis_2004"})
+    assert promote_markup_superset(b"", result, allowed) is result
 
 
 def test_xml_encoding_declaration():

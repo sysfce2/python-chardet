@@ -4,8 +4,20 @@ from __future__ import annotations
 
 import re
 
-from chardet.pipeline import DETERMINISTIC_CONFIDENCE, DetectionResult
-from chardet.registry import lookup_encoding
+from chardet.pipeline import DETERMINISTIC_CONFIDENCE, DetectionResult, PipelineContext
+from chardet.pipeline.structural import compute_structural_score
+from chardet.registry import REGISTRY, lookup_encoding
+
+# Markup charset declarations that commonly refer to a Windows superset
+# encoding rather than the strict standard encoding.  Japanese web content
+# almost universally declares "Shift_JIS" but actually uses CP932 extensions;
+# similarly, Korean web content declares "EUC-KR" but uses CP949/UHC.
+# When the declared encoding resolves to the base (left), we check whether
+# the superset (right) is a better structural match.
+_MARKUP_SUPERSET_PROMOTIONS: dict[str, str] = {
+    "shift_jis_2004": "cp932",
+    "euc_kr": "cp949",
+}
 
 _SCAN_LIMIT = 4096
 
@@ -91,6 +103,44 @@ def detect_markup_charset(data: bytes) -> DetectionResult | None:
                 )
 
     return _detect_pep263(data)
+
+
+def promote_markup_superset(
+    data: bytes,
+    markup_result: DetectionResult,
+    allowed: frozenset[str],
+) -> DetectionResult:
+    """Promote a markup-declared encoding to its superset when structural evidence supports it.
+
+    If the declared encoding has a known superset (per
+    :data:`_MARKUP_SUPERSET_PROMOTIONS`), the superset validates the data,
+    and the superset's structural score is materially better, return a new
+    result using the superset encoding.  Otherwise return *markup_result*
+    unchanged.
+    """
+    if markup_result.encoding is None:
+        return markup_result
+    superset_name = _MARKUP_SUPERSET_PROMOTIONS.get(markup_result.encoding)
+    if superset_name is None or superset_name not in allowed:
+        return markup_result
+    superset_info = REGISTRY[superset_name]
+    # Validate: superset must be able to decode the data
+    try:
+        data.decode(superset_name, errors="strict")
+    except (UnicodeDecodeError, LookupError):
+        return markup_result
+    # Compare structural scores
+    ctx = PipelineContext()
+    base_score = compute_structural_score(data, REGISTRY[markup_result.encoding], ctx)
+    superset_score = compute_structural_score(data, superset_info, ctx)
+    if superset_score > base_score:
+        return DetectionResult(
+            superset_name,
+            markup_result.confidence,
+            markup_result.language,
+            markup_result.mime_type,
+        )
+    return markup_result
 
 
 def _validate_bytes(data: bytes, encoding: str) -> bool:

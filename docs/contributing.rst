@@ -93,14 +93,22 @@ each stage either returns a definitive result or passes to the next:
 3. **Escape sequences** (``escape.py``) — ISO-2022-JP/KR, HZ-GB-2312
 4. **Magic numbers** (``magic.py``) — binary file type identification
 5. **Binary detection** (``binary.py``) — null bytes / control chars
-6. **Markup charset** (``markup.py``) — ``<meta charset>`` / ``<?xml encoding>``
+6. **Markup charset** (``markup.py``) — ``<meta charset>`` / ``<?xml encoding>`` extraction, plus superset promotion (Shift_JIS→CP932, EUC-KR→CP949) when structural evidence supports it
 7. **ASCII** (``ascii.py``) — pure 7-bit check
 8. **UTF-8** (``utf8.py``) — structural multi-byte validation
 9. **Byte validity** (``validity.py``) — eliminate invalid encodings
 10. **CJK gating** (in orchestrator) — eliminate spurious CJK candidates
 11. **Structural probing** (``structural.py``) — multi-byte encoding fit
 12. **Statistical scoring** (``statistical.py``) — bigram frequency models
-13. **Post-processing** (orchestrator) — confusion groups, niche demotion
+13. **Post-processing** (``postprocess.py``) — chained rank corrections: confusion-group resolution (delegated to ``confusion.py``), niche Latin demotion, KOI8-T promotion
+14. **Language detection** (``language.py``) — three-tier fill of the ``language`` field on every result (single-language map → multi-language bigram → UTF-8 fallback), runs after the core pipeline
+
+Accuracy-evaluation tables and predicates (``is_correct``,
+``is_equivalent_detection``, ``SUPERSETS``, ``LANGUAGE_EQUIVALENCES``,
+etc.) live in ``evaluation.py``.  Public-API encoding-name remapping
+(``apply_compat_names``, ``apply_preferred_superset``) lives in
+``output_names.py``.  The legacy ``equivalences.py`` module is a
+deprecation shim re-exporting both, scheduled for removal in 8.0.
 
 Key types:
 
@@ -130,7 +138,8 @@ Compiled modules: ``models/__init__.py``, ``pipeline/structural.py``,
 ``pipeline/validity.py``, ``pipeline/statistical.py``,
 ``pipeline/utf1632.py``, ``pipeline/utf8.py``, ``pipeline/escape.py``,
 ``pipeline/orchestrator.py``, ``pipeline/confusion.py``,
-``pipeline/magic.py``, ``pipeline/ascii.py``.
+``pipeline/magic.py``, ``pipeline/ascii.py``, ``pipeline/language.py``,
+``pipeline/postprocess.py``.
 
 These modules cannot use ``from __future__ import annotations``
 (``FA100`` is ignored for them in ruff config).

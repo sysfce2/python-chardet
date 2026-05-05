@@ -35,7 +35,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from utils import collect_test_files, normalize_language
 from utils import format_bytes as _format_bytes
 
-from chardet.equivalences import (
+from chardet.evaluation import (
     BIDIRECTIONAL_GROUPS,
     SUPERSETS,
     is_correct,

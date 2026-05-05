@@ -14,7 +14,7 @@ from chardet._utils import (
     _validate_max_bytes,
 )
 from chardet.enums import EncodingEra, LanguageFilter
-from chardet.equivalences import (
+from chardet.output_names import (
     PREFERRED_SUPERSET,
     apply_compat_names,
     apply_preferred_superset,

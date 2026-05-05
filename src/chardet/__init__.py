@@ -15,7 +15,7 @@ from chardet._utils import (
 from chardet._version import __version__
 from chardet.detector import UniversalDetector
 from chardet.enums import EncodingEra, LanguageFilter
-from chardet.equivalences import apply_compat_names, apply_preferred_superset
+from chardet.output_names import apply_compat_names, apply_preferred_superset
 from chardet.pipeline import DetectionDict, DetectionResult
 from chardet.pipeline.orchestrator import run_pipeline
 from chardet.registry import _validate_encoding, normalize_encodings

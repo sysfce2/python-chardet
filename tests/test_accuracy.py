@@ -16,7 +16,7 @@ from utils import collect_test_files, get_data_dir, normalize_language
 import chardet
 from chardet.detector import UniversalDetector
 from chardet.enums import EncodingEra
-from chardet.equivalences import (
+from chardet.evaluation import (
     is_correct,
     is_equivalent_detection,
     is_language_equivalent,

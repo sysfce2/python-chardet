@@ -8,6 +8,26 @@ Changelog
    Dan directed the design, reviewed all output, and takes responsibility for
    the result. Unmarked entries by Dan were written without AI assistance.
 
+7.5.0 (UNRELEASED)
+-------------------
+
+**Improvements:**
+
+- ``chardet.equivalences`` is now a deprecation shim.  Accuracy-evaluation
+  predicates (``is_correct``, ``is_equivalent_detection``, etc.) moved to
+  ``chardet.evaluation``; public-API encoding-name remapping
+  (``apply_compat_names``, ``apply_preferred_superset``) moved to
+  ``chardet.output_names``.  Existing imports keep working with a
+  ``DeprecationWarning``.  ``chardet.equivalences`` will be removed in 8.0.
+  (`Dan Blanchard <https://github.com/dan-blanchard>`_ via Claude)
+- Internal pipeline reorganization: language detection,
+  markup-superset promotion, and post-processing rank corrections moved
+  out of the orchestrator into ``pipeline/language.py``,
+  ``pipeline/markup.py``, and ``pipeline/postprocess.py`` respectively.
+  No behavior change.  The two new modules are also added to the mypyc
+  compilation list.
+  (`Dan Blanchard <https://github.com/dan-blanchard>`_ via Claude)
+
 7.4.3 (2026-04-13)
 -------------------
 
