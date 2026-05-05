@@ -18,7 +18,7 @@ extensions = [
 autosummary_generate = True
 
 templates_path = ["_templates"]
-exclude_patterns = ["_build", "plans"]
+exclude_patterns = ["_build", "plans", "adr"]
 
 html_theme = "furo"
 html_static_path = ["_static"]
